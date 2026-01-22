@@ -48,6 +48,18 @@ class StatsView @JvmOverloads constructor(
     private var oval = RectF(0F, 0F, 0F, 0F)
     private var topPoint = PointF(0F, 0F)
 
+    var progress = 1f
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    var rotationAngle = 0f
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     private val paint = Paint(
         Paint.ANTI_ALIAS_FLAG
     ).apply {
@@ -78,34 +90,48 @@ class StatsView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         if (data.isEmpty()) return
-        var startAngle = -90F
+
         val sum = data.sum()
-
         if (sum == 0f) return
+
+        var startAngle = -90f + rotationAngle
+
         data.forEachIndexed { index, datum ->
-            val angle = datum / sum * 360
+            val fullAngle = datum / sum * 360f
+            val sweep = fullAngle * progress
 
-            paint.color = colors.getOrElse(index) { generateRandomColor() }
-
+            paint.color = colors[index % colors.size]
             paint.strokeCap = if (index == 0) {
                 Paint.Cap.BUTT
             } else {
                 Paint.Cap.ROUND
             }
 
-            canvas.drawArc(oval, startAngle, angle, false, paint)
-            startAngle += angle
-        }
-        paint.apply {
-            color = colors.first()
-            strokeCap = Paint.Cap.ROUND
+            canvas.drawArc(
+                oval,
+                startAngle,
+                sweep,
+                false,
+                paint
+            )
+
+            startAngle += fullAngle
         }
 
-        canvas.drawArc(oval, -90f, 0.01f, false, paint)
+        if (progress > 0f) {
+            paint.color = colors.first()
+            paint.strokeCap = Paint.Cap.ROUND
+            canvas.drawArc(
+                oval,
+                -90f + rotationAngle,
+                0.01f,
+                false,
+                paint
+            )
+        }
 
-        val percentage = 100F
         canvas.drawText(
-            "%.2f%%".format(percentage),
+            "100.00%",
             center.x,
             center.y + textPaint.textSize / 4,
             textPaint
